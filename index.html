@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mood Map — Bengaluru walks for how you feel</title>
+<meta name="description" content="Type how you feel and get a walking route through Bengaluru — three stops, one for how you feel right now.">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <a class="brand" href=".">Mood<span class="brand-dot">·</span>Map</a>
+    <p class="brand-sub">Bengaluru walks, matched to your mood.</p>
+    <nav class="topnav">
+      <button id="savedBtn" type="button">Saved routes <span id="savedCount" class="count">0</span></button>
+      <button id="settingsBtn" type="button">Settings</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro">
+    <h1>Same city.<br><em>Different feeling,</em><br>different city.</h1>
+    <p class="lede">Most maps optimise for fastest. This one optimises for how you feel. Type a mood, get a three-stop walk — a place to decompress, a place to look around, a place to end on a high.</p>
+    <p class="demo-note" id="demoNote">Offline demo data — no key needed. Distances are straight-line estimates from a seeded list of 48 real Bengaluru places. Add your own free keys in Settings for live AI wording and real street routing.</p>
+  </section>
+
+  <div class="layout">
+    <section class="panel" aria-label="Plan a walk">
+      <form id="moodForm">
+        <label for="moodInput">How are you feeling, in your own words?</label>
+        <textarea id="moodInput" rows="2" maxlength="140" placeholder="lonely but adventurous">lonely but adventurous</textarea>
+        <div class="chips" id="chips" aria-label="Try a mood"></div>
+        <div class="filters">
+          <label>Budget
+            <select id="budgetSel">
+              <option value="any">Any budget</option>
+              <option value="low">Under ₹150 a stop</option>
+            </select>
+          </label>
+          <label>Time
+            <select id="timeSel">
+              <option value="any">No rush</option>
+              <option value="short">Under 2 hours</option>
+            </select>
+          </label>
+          <label>Energy
+            <select id="energySel">
+              <option value="auto">From my words</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+        </div>
+        <div class="actions">
+          <button class="btn-primary" type="submit">Plan my walk</button>
+          <button class="btn-ghost" id="regenBtn" type="button" disabled>Another version</button>
+        </div>
+        <p class="readback" id="readback" aria-live="polite"></p>
+      </form>
+
+      <div id="summary" class="summary" hidden></div>
+      <ol id="stops" class="stops"></ol>
+      <div id="routeActions" class="route-actions" hidden>
+        <button class="btn-ghost" id="saveBtn" type="button">Save this route</button>
+        <button class="btn-ghost" id="shareBtn" type="button">Copy share link</button>
+        <button class="btn-ghost" id="exportBtn" type="button">Copy as text</button>
+      </div>
+      <p id="statusLine" class="status" aria-live="polite"></p>
+    </section>
+
+    <section class="map-panel" aria-label="Map">
+      <div id="map" role="application" aria-label="Map of your route in Bengaluru"></div>
+      <p class="map-foot">Map data © OpenStreetMap contributors. Places and hours are the usual published ones — check before you go.</p>
+    </section>
+  </div>
+
+  <section class="saved" id="savedSection" hidden>
+    <h2>Saved routes</h2>
+    <ul id="savedList" class="saved-list"></ul>
+  </section>
+
+  <section class="how">
+    <h2>How it works</h2>
+    <div class="how-grid">
+      <div><h3>1. You describe the feeling</h3><p>Free text, not a quiz. “Lonely but adventurous” is a perfectly good input.</p></div>
+      <div><h3>2. The scorer picks three stops</h3><p>Places are ranked by tag match, cost and distance. The AI never ranks — it only writes the one-line reason, and only when you add a key.</p></div>
+      <div><h3>3. The walk has an arc</h3><p>Stop one calms you down, stop two wakes you up, stop three is the reward. Regenerate gives you the next-best set.</p></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <p>Mood Map is a demo. Mood matching is tags and vibes, not psychology. Distances are estimates until you add an OpenRouteService key; opening hours, crowds and prices are not live. One city, seeded well, beats ten cities seeded thin.</p>
+    <p>Built by Sivasai Boggu, 2026. MIT licence.</p>
+  </footer>
+</main>
+
+<dialog id="settingsDlg" class="dlg">
+  <form method="dialog">
+    <h2>Settings</h2>
+    <p class="dlg-lede">Keys live only in this browser (localStorage). Nothing is sent anywhere except the service you keyed, and only when you plan a walk.</p>
+    <label>Gemini API key <span class="hint">(free, Google AI Studio)</span>
+      <input id="geminiKey" type="password" autocomplete="off" placeholder="AIza…">
+    </label>
+    <label>Gemini model
+      <select id="geminiModel">
+        <option value="gemini-3.8-flash">gemini-3.8-flash</option>
+        <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (fallback)</option>
+      </select>
+    </label>
+    <label>OpenRouteService API key <span class="hint">(free Standard plan)</span>
+      <input id="orsKey" type="password" autocomplete="off" placeholder="5b3ce359…">
+    </label>
+    <p class="dlg-status" id="keyStatus"></p>
+    <div class="dlg-actions">
+      <button class="btn-ghost" id="clearKeysBtn" type="button">Remove keys</button>
+      <button class="btn-primary" id="saveKeysBtn" type="button">Save keys</button>
+      <button class="btn-ghost" type="submit">Close</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="vendor/leaflet.js"></script>
+<script src="bundle.js"></script>
+</body>
+</html>

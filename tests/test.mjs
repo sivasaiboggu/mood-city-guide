@@ -145,3 +145,19 @@ test("share link: garbage decodes to null", () => {
   assert.equal(decodeShare("!!!not-a-code!!!"), null);
   assert.equal(decodeShare(""), null);
 });
+
+
+test("buildRoute: the energy control overrides the mood's own energy", () => {
+  const low = buildRoute("tired but want crowds", { energy: "low" });
+  const high = buildRoute("tired but want crowds", { energy: "high" });
+  assert.equal(low.energy, "low");
+  assert.equal(high.energy, "high");
+  assert.notDeepEqual(low.stops.map((s) => s.id), high.stops.map((s) => s.id));
+});
+
+test("share link: non-ASCII mood survives a round trip", () => {
+  const r = buildRoute("lonely but adventurous, café and rain");
+  const back = decodeShare(encodeShare(r));
+  assert.equal(back.mood, "lonely but adventurous, café and rain");
+  assert.deepEqual(back.stops.map((s) => s.id), r.stops.map((s) => s.id));
+});

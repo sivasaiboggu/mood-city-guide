@@ -108,7 +108,7 @@ async function orsGeometry(route) {
 function renderRoute(route, opts = {}) {
   currentRoute = route;
   const mood = parseMood(route.mood);
-  readbackEl.innerHTML = `Reading “<b>${escapeHtml(route.mood)}</b>” as: ${mood.tags.map(escapeHtml).join(" · ")} — ${mood.energy} energy, ${mood.social === "either" ? "any company" : mood.social}.`;
+  readbackEl.innerHTML = `Reading “<b>${escapeHtml(route.mood)}</b>” as: ${mood.tags.map(escapeHtml).join(" · ")} — ${route.energy || mood.energy} energy, ${mood.social === "either" ? "any company" : mood.social}.`;
   summaryEl.hidden = false;
   const hours = Math.floor(route.totalMin / 60), mins = route.totalMin % 60;
   summaryEl.innerHTML = `

@@ -63,6 +63,9 @@ export function hashSeed(s) {
 
 function scorePlace(place, mood, arcRole, opts, anchor) {
   let s = 0;
+  // The energy control overrides the mood's own energy: a tired person who
+  // picks "high energy" should get lively stops, not quiet ones.
+  const energy = opts.energy || mood.energy;
   for (const tag of mood.tags) if (place.tags.includes(tag)) s += 3;
   // Arc roles: 1 = decompress, 2 = explore, 3 = reward.
   if (arcRole === 1 && (place.tags.includes("quiet") || place.tags.includes("green") || place.tags.includes("water"))) s += 4;
@@ -76,7 +79,7 @@ function scorePlace(place, mood, arcRole, opts, anchor) {
   if (opts.budget === "low" && place.cost <= 150) s += 3;
   if (opts.budget === "low" && place.cost > 400) s -= 5;
   if (opts.time === "short" && place.kind === "park") s -= 1;
-  if (mood.energy === "low" && place.tags.includes("busy")) s -= 2;
+  if (energy === "low" && place.tags.includes("busy")) s -= 2;
   // Keep the walk walkable: penalise stops far from the previous stop.
   if (anchor) {
     const km = haversineKm(anchor, place);
@@ -171,7 +174,7 @@ export function buildRoute(moodText, opts = {}) {
   }
   const walkMin = Math.round((totalKm / WALK_KMH) * 60);
   return {
-    mood: moodText, parsed: mood, stops: ordered, legs,
+    mood: moodText, parsed: mood, energy: options.energy, stops: ordered, legs,
     totalKm: +totalKm.toFixed(2), walkMin,
     stayMin: ordered.length * STOP_MINUTES,
     totalMin: walkMin + ordered.length * STOP_MINUTES,
@@ -180,13 +183,27 @@ export function buildRoute(moodText, opts = {}) {
   };
 }
 
+// UTF-8-safe base64 without the deprecated escape()/unescape() helpers.
+function utf8ToB64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+function b64ToUtf8(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
 export function encodeShare(route) {
   const payload = { m: route.mood, s: route.stops.map((s) => s.id) };
-  return btoa(unescape(encodeURIComponent(JSON.stringify(payload)))).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+  return utf8ToB64(JSON.stringify(payload)).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 }
 export function decodeShare(code) {
   try {
-    const json = decodeURIComponent(escape(atob(code.replaceAll("-", "+").replaceAll("_", "/"))));
+    const json = b64ToUtf8(code.replaceAll("-", "+").replaceAll("_", "/"));
     const d = JSON.parse(json);
     if (!d.m || !Array.isArray(d.s)) return null;
     const stops = d.s.map((id) => PLACES.find((p) => p.id === id)).filter(Boolean);
